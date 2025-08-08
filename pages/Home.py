@@ -1,12 +1,14 @@
-# Home.py
 import tkinter as tk
 
 def get_home_stats(products, sales_history):
     total_products = len(products)
     purchase_counts = {}
+
+    # Count total purchases per product name
     for sale in sales_history:
         for batch, name, qty, sell_price, total in sale["items"]:
-            purchase_counts[name] = purchase_counts.get(name, 0) + qty
+            purchase_counts[name] = purchase_counts.get(name, 0) + int(qty)
+
     if purchase_counts:
         most_bought = max(purchase_counts, key=purchase_counts.get)
         most_bought_qty = purchase_counts[most_bought]
@@ -14,16 +16,33 @@ def get_home_stats(products, sales_history):
     else:
         most_bought_text = "No sales yet"
 
-    total_profit = 0
+    total_profit = 0.0
+
+    # Calculate total profit
     for sale in sales_history:
         for batch, name, qty, sell_price, total in sale["items"]:
             cost_price = None
+            # Find the cost price of the product by batch
             for p in products:
                 if p[0] == batch:
                     cost_price = p[2]
                     break
+            
+            # Debug print to see the values being processed
+            print(f"Processing sale item -> Batch: {batch}, Name: {name}, Qty: {qty}, Sell Price: {sell_price}, Cost Price: {cost_price}")
+
             if cost_price is not None:
-                total_profit += (sell_price - cost_price) * qty
+                try:
+                    cp = float(cost_price)
+                    sp = float(sell_price)
+                    q = int(qty)
+                    profit = (sp - cp) * q
+                    total_profit += profit
+                    print(f"Profit for this item: {profit}")
+                except Exception as e:
+                    print(f"Error converting price or quantity to number: {e}")
+            else:
+                print(f"Cost price not found for batch '{batch}'")
 
     return total_products, most_bought_text, total_profit
 
