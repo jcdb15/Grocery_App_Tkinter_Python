@@ -92,50 +92,60 @@ def show_home_page(content_frame, products, sales_history):
     tk.Label(stats_frame, text=f"🔥 Most Purchased Product: {most_bought}", font=("Arial", 14)).pack(anchor="w", pady=5)
     tk.Label(stats_frame, text=f"💰 Total Profit: ₱{total_profit:.2f}", font=("Arial", 14)).pack(anchor="w", pady=5)
 
+    fig, ax = plt.subplots(figsize=(6, 6))
+
     if profit_per_product:
-        fig, ax = plt.subplots(figsize=(6, 6))
         labels = list(profit_per_product.keys())
         sizes = list(profit_per_product.values())
+        colors = plt.cm.tab20.colors[:len(labels)]  # nice varied colors
+    else:
+        labels = ["No Data"]
+        sizes = [1]
+        colors = ["#cccccc"]  # gray slice for no data
 
-        wedges, texts = ax.pie(
-            sizes,
-            labels=None,          # No labels outside
-            autopct=None,         # No % on slices
-            startangle=140,
-            wedgeprops=dict(width=0.6, edgecolor='w')  # Donut style with white edges
-        )
+    wedges, texts, autotexts = ax.pie(
+        sizes,
+        labels=labels,
+        autopct=lambda p: f"{p:.1f}%" if profit_per_product else "",  # show % only if real data
+        startangle=140,
+        colors=colors,
+        wedgeprops=dict(width=0.6, edgecolor='w'),
+        textprops={'color':"black", 'fontsize':12, 'weight':'bold'}
+    )
 
-        ax.set_title("Profit Distribution by Product")
+    ax.set_title("Profit Distribution by Product", fontsize=16, weight='bold')
 
-        canvas = FigureCanvasTkAgg(fig, master=content_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(pady=10)
+    canvas = FigureCanvasTkAgg(fig, master=content_frame)
+    canvas.draw()
+    canvas.get_tk_widget().pack(pady=10)
 
-        tooltip = tk.Toplevel(content_frame)
-        tooltip.withdraw()
-        tooltip.overrideredirect(True)
-        tooltip_label = tk.Label(
-            tooltip, text="", bg="yellow", relief="solid", borderwidth=1,
-            font=("Arial", 10))
-        tooltip_label.pack()
+    tooltip = tk.Toplevel(content_frame)
+    tooltip.withdraw()
+    tooltip.overrideredirect(True)
+    tooltip_label = tk.Label(
+        tooltip, text="", bg="yellow", relief="solid", borderwidth=1,
+        font=("Arial", 10))
+    tooltip_label.pack()
 
-        def on_motion(event):
-            if event.x is None or event.y is None:
-                tooltip.withdraw()
-                return
-
-            # event.x, event.y are mouse coords relative to canvas in pixels
-            for i, wedge in enumerate(wedges):
-                if wedge.contains_point([event.x, event.y]):
-                    profit_val = sizes[i]
-                    label = labels[i]
-                    tooltip_label.config(text=f"{label}\n₱{profit_val:.2f}")
-                    tooltip.geometry(f"+{event.guiEvent.x_root + 10}+{event.guiEvent.y_root + 10}")
-                    tooltip.deiconify()
-                    return
+    def on_motion(event):
+        if event.x is None or event.y is None:
             tooltip.withdraw()
+            return
 
-        canvas.mpl_connect("motion_notify_event", on_motion)
+        for i, wedge in enumerate(wedges):
+            if wedge.contains_point([event.x, event.y]):
+                profit_val = sizes[i]
+                label = labels[i]
+                if profit_per_product:
+                    tooltip_label.config(text=f"{label}\n₱{profit_val:.2f}")
+                else:
+                    tooltip_label.config(text=f"{label}")
+                tooltip.geometry(f"+{event.guiEvent.x_root + 10}+{event.guiEvent.y_root + 10}")
+                tooltip.deiconify()
+                return
+        tooltip.withdraw()
+
+    canvas.mpl_connect("motion_notify_event", on_motion)
 
     tk.Label(content_frame, text="Use the menu on the left to manage your store.", font=("Arial", 12, "italic")).pack(pady=10)
 
